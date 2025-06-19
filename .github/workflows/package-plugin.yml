@@ -1,0 +1,33 @@
+name: Package Dify Plugin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  package-plugin:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Dify plugin cli tool
+        run: |
+          wget -q https://github.com/langgenius/dify-plugin-daemon/releases/download/0.1.2/dify-plugin-linux-amd64 -O /tmp/dify-plugin-linux-amd64
+          chmod +x /tmp/dify-plugin-linux-amd64
+
+      - name: Get plugin info from manifest
+        run: |
+          echo "PLUGIN_NAME=$(grep '^name:' manifest.yaml | cut -d' ' -f2)" >> $GITHUB_ENV
+          echo "VERSION=$(grep '^version:' manifest.yaml | cut -d' ' -f2)" >> $GITHUB_ENV
+
+      - name: Package plugin
+        run: |
+          PACKAGE_NAME="${{ env.PLUGIN_NAME }}-${{ env.VERSION }}.difypkg"
+          /tmp/dify-plugin-linux-amd64 plugin package . -o "$PACKAGE_NAME"
+
+      - name: Upload plugin package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dify-plugin-package
+          path: "*.difypkg"
